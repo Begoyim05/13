@@ -1,0 +1,99 @@
+#include <iostream>
+using namespace std;
+#include <string>
+
+class ListMap {
+public:
+    struct Entry {
+        string key;
+        int value;
+        Entry* next;
+        Entry(const string& k, int v, Entry* n = nullptr)
+            : key(k), value(v), next(n) {}
+    };
+
+    ListMap();
+    ~ListMap();
+    bool empty() const;
+    int size() const;
+    bool put(const string& key, int value);
+    Entry* find(const string& key) const;
+    bool erase(const string& key);
+    void print() const;
+
+private:
+    Entry* head;
+    int n;
+};
+
+ListMap::ListMap() : head(nullptr), n(0) {}
+
+ListMap::~ListMap() {
+    Entry* cur = head;
+    while (cur != nullptr) {
+        Entry* nxt = cur->next;
+        delete cur;
+        cur = nxt;
+    }
+}
+
+bool ListMap::empty() const {
+    return n == 0;
+}
+
+int ListMap::size() const {
+    return n;
+}
+
+ListMap::Entry* ListMap::find(const string& key) const {
+    Entry* cur = head;
+    while (cur != nullptr) {
+        if (cur->key == key) return cur;
+        cur = cur->next;
+    }
+    return nullptr;
+}
+
+bool ListMap::put(const string& key, int value) {
+    Entry* e = find(key);
+    if (e != nullptr) {
+        // Key exists → update
+        e->value = value;
+        return false;  
+    }
+
+    head = new Entry(key, value, head);
+    n++;
+    return true; 
+}
+
+bool ListMap::erase(const string& key) {
+    Entry* cur = head;
+    Entry* prev = nullptr;
+
+    while (cur != nullptr) {
+        if (cur->key == key) {
+            if (prev == nullptr) {
+                head = cur->next; // removing head
+            } else {
+                prev->next = cur->next;
+            }
+            delete cur;
+            n--;
+            return true;
+        }
+        prev = cur;
+        cur = cur->next;
+    }
+
+    return false; 
+}
+
+void ListMap::print() const {
+    Entry* cur = head;
+    while (cur != nullptr) {
+        cout << "(" << cur->key << ", " << cur->value << ") -> ";
+        cur = cur->next;
+    }
+    cout << "NULL\n";
+}
