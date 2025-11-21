@@ -1,0 +1,148 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <optional>
+using namespace std;
+
+class HashMapDoubleHashing {
+public:
+    struct Entry {
+        string key;
+        int value;
+    };
+
+    explicit HashMapDoubleHashing(int capacity = 17);
+
+    bool put(const string& key, int value);
+    bool find(const string& key, int& outValue) const;
+    bool erase(const string& key);
+    void printTable() const;
+
+private:
+    vector<optional<Entry>> table;
+    static Entry AVAILABLE;
+    int n;
+    int capacity;
+
+    unsigned long long polynomialHash(const string& key) const;
+
+    int h1(const string& key) const;
+    int h2(const string& key) const;
+
+    int probeIndex(const string& key, int i) const;
+};
+
+HashMapDoubleHashing::Entry HashMapDoubleHashing::AVAILABLE = {"", -1};
+
+HashMapDoubleHashing::HashMapDoubleHashing(int capacity)
+    : table(capacity), n(0), capacity(capacity) {}
+
+
+unsigned long long HashMapDoubleHashing::polynomialHash(const string& key) const {
+    unsigned long long h = 0;
+    unsigned long long a = 33;
+    for (char c : key) {
+        h = h * a + c;
+    }
+    return h;
+}
+
+
+int HashMapDoubleHashing::h1(const string& key) const {
+    return polynomialHash(key) % capacity;
+}
+
+int HashMapDoubleHashing::h2(const string& key) const {
+    unsigned long long h = polynomialHash(key);
+    int step = (h % (capacity - 2)) + 1; 
+    return step;
+}
+
+int HashMapDoubleHashing::probeIndex(const string& key, int i) const {
+    return (h1(key) + i * h2(key)) % capacity;
+}
+
+bool HashMapDoubleHashing::put(const string& key, int value) {
+    if (n == capacity) {
+        cout << "Table is full!\n";
+        return false;
+    }
+
+    for (int i = 0; i < capacity; i++) {
+        int idx = probeIndex(key, i);
+
+        // Update existing
+        if (table[idx].has_value() && table[idx]->key == key) {
+            table[idx]->value = value;
+            return true;
+        }
+
+        if (!table[idx].has_value() || table[idx]->key == "") {
+            table[idx] = Entry{key, value};
+            n++;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool HashMapDoubleHashing::find(const string& key, int& outValue) const {
+    for (int i = 0; i < capacity; i++) {
+        int idx = probeIndex(key, i);
+
+        if (!table[idx].has_value()) {
+            return false; 
+        }
+
+        if (table[idx].has_value() && table[idx]->key == key) {
+            outValue = table[idx]->value;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool HashMapDoubleHashing::erase(const string& key) {
+    for (int i = 0; i < capacity; i++) {
+        int idx = probeIndex(key, i);
+
+        if (!table[idx].has_value()) {
+            return false;
+        }
+
+        if (table[idx].has_value() && table[idx]->key == key) {
+            table[idx] = AVAILABLE;
+            n--;
+            return true;
+        }
+    }
+    return false;
+}
+
+void HashMapDoubleHashing::printTable() const {
+    for (int i = 0; i < capacity; i++) {
+        cout << i << ": ";
+        if (!table[i].has_value()) {
+            cout << "EMPTY\n";
+        }
+        else if (table[i]->key == "") {
+            cout << "AVAILABLE\n";
+        }
+        else {
+            cout << "(" << table[i]->key << ", " << table[i]->value << ")\n";
+        }
+    }
+}
+int main() {
+    HashMapDoubleHashing H;
+
+    vector<string> keys = {"dog", "cat", "apple", "orange", "milk",
+                           "tea", "coffee", "chair", "desk"};
+
+    int value = 1;
+    for (auto& k : keys)
+        H.put(k, value++);
+
+    H.printTable();
+}
