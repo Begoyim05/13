@@ -1,0 +1,151 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <list>
+#include <cmath>
+using namespace std;
+
+class HashMapChaining {
+public:
+    struct Entry {
+        string key;
+        int value;
+    };
+
+    explicit HashMapChaining(int initialCapacity = 11);
+    bool empty() const;
+    int size() const;
+    bool put(const string& key, int value);
+    bool find(const string& key, int& outValue) const;
+    bool erase(const string& key);
+    void printTable() const;
+
+private:
+    vector<list<Entry>> table;
+    int n; // number of stored pairs
+    double loadFactorThreshold = 0.9;
+
+    int hash(const string& key) const;
+
+    bool isPrime(int x) const;
+    int nextPrime(int x) const;
+};
+
+HashMapChaining::HashMapChaining(int initialCapacity)
+    : table(initialCapacity), n(0) {}
+
+bool HashMapChaining::empty() const {
+    return n == 0;
+}
+
+int HashMapChaining::size() const {
+    return n;
+}
+
+int HashMapChaining::hash(const string& key) const {
+    long long h = 0;
+    long long a = 33;  
+
+    for (char c : key) {
+        h = h * a + c;
+    }
+
+    h %= table.size();
+    if (h < 0) h += table.size();
+    return (int)h;
+}
+
+bool HashMapChaining::put(const string& key, int value) {
+    int idx = hash(key);
+    list<Entry>& bucket = table[idx];
+
+    for (Entry& e : bucket) {
+        if (e.key == key) {
+            e.value = value;
+            return false;     
+        }
+    }
+
+    bucket.push_back({key, value});
+    n++;
+
+    double load = double(n) / table.size();
+    if (load > loadFactorThreshold) {
+        rehash();
+    }
+
+    return true; // new insertion
+}
+
+bool HashMapChaining::find(const string& key, int& outValue) const {
+    int idx = hash(key);
+    const list<Entry>& bucket = table[idx];
+
+    for (const Entry& e : bucket) {
+        if (e.key == key) {
+            outValue = e.value;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool HashMapChaining::erase(const string& key) {
+    int idx = hash(key);
+    list<Entry>& bucket = table[idx];
+
+    for (auto it = bucket.begin(); it != bucket.end(); ++it) {
+        if (it->key == key) {
+            bucket.erase(it);
+            n--;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool HashMapChaining::isPrime(int x) const {
+    if (x <= 1) return false;
+    if (x <= 3) return true;
+    if (x % 2 == 0 || x % 3 == 0) return false;
+
+    for (int i = 5; i * i <= x; i += 6)
+        if (x % i == 0 || x % (i + 2) == 0)
+            return false;
+
+    return true;
+}
+
+int HashMapChaining::nextPrime(int x) const {
+    while (!isPrime(x)) x++;
+    return x;
+}
+
+void HashMapChaining::rehash() {
+    int oldSize = table.size();
+    int newSize = nextPrime(2 * oldSize);
+
+    vector<list<Entry>> oldTable = table;
+    table.clear();
+    table.resize(newSize);
+
+    n = 0; 
+
+    for (const auto& bucket : oldTable) {
+        for (const Entry& e : bucket) {
+            put(e.key, e.value); 
+        }
+    }
+}
+
+void HashMapChaining::printTable() const {
+    for (int i = 0; i < table.size(); i++) {
+        cout << i << ": ";
+        for (const Entry& e : table[i]) {
+            cout << "(" << e.key << ", " << e.value << ") -> ";
+        }
+        cout << "NULL\n";
+    }
+}
