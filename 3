@@ -1,0 +1,141 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <optional>
+using namespace std;
+
+class HashMapLinearProbing {
+public:
+    struct Entry {
+        string key;
+        int value;
+    };
+
+    explicit HashMapLinearProbing(int capacity = 13);
+
+    bool put(const string& key, int value);
+    bool find(const string& key, int& outValue) const;
+    bool erase(const string& key);
+    void printTable() const;
+
+private:
+    vector<optional<Entry>> table;
+    static Entry AVAILABLE;   // special marker
+    int n;
+
+    int hash(const string& key) const {
+        long long h = 0;
+        long long a = 33;
+        for (char c : key) {
+            h = h * a + c;
+        }
+        h %= table.size();
+        if (h < 0) h += table.size();
+        return (int)h;
+    }
+};
+
+HashMapLinearProbing::Entry HashMapLinearProbing::AVAILABLE = {"", -1};
+
+HashMapLinearProbing::HashMapLinearProbing(int capacity)
+    : table(capacity), n(0) {}
+
+
+bool HashMapLinearProbing::put(const string& key, int value) {
+    if (n == table.size()) {
+        cout << "Table is full, cannot insert\n";
+        return false;
+    }
+
+    int idx = hash(key);
+
+    for (int i = 0; i < table.size(); i++) {
+        int j = (idx + i) % table.size();
+
+    
+        if (table[j].has_value() && table[j]->key == key) {
+            table[j]->value = value;
+            return true;
+  }
+        if (!table[j].has_value() || table[j]->key == "") {
+            table[j] = Entry{key, value};
+            n++;
+            return true;
+        }
+    }
+
+    return false; 
+}
+
+bool HashMapLinearProbing::find(const string& key, int& outValue) const {
+    int idx = hash(key);
+
+    for (int i = 0; i < table.size(); i++) {
+        int j = (idx + i) % table.size();
+
+        if (!table[j].has_value()) {
+
+            return false;
+        }
+
+        if (table[j].has_value() && table[j]->key == key) {
+            outValue = table[j]->value;
+            return true;
+        }
+
+    }
+
+    return false;
+}
+
+bool HashMapLinearProbing::erase(const string& key) {
+    int idx = hash(key);
+
+    for (int i = 0; i < table.size(); i++) {
+        int j = (idx + i) % table.size();
+
+        if (!table[j].has_value()) {
+            return false; 
+        }
+
+        if (table[j].has_value() && table[j]->key == key) {
+ 
+            table[j] = AVAILABLE;
+            n--;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void HashMapLinearProbing::printTable() const {
+    for (int i = 0; i < table.size(); i++) {
+        cout << i << ": ";
+        if (!table[i].has_value()) {
+            cout << "EMPTY\n";
+        } else if (table[i]->key == "") {
+            cout << "AVAILABLE\n";
+        } else {
+            cout << "(" << table[i]->key << ", " << table[i]->value << ")\n";
+        }
+    }
+}
+int main() {
+    HashMapLinearProbing H;
+
+    H.put("apple", 10);
+    H.put("banana", 20);
+    H.put("cat", 30);
+    H.put("dog", 40);
+
+    H.printTable();
+
+    int val;
+    if (H.find("banana", val))
+        cout << "banana = " << val << endl;
+
+    H.erase("banana");
+    H.printTable();
+}
+
